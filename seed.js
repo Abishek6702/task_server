@@ -45,6 +45,15 @@ const importData = async () => {
     // User.collection.insertMany so we control the exact stored hash.
     const hashedPassword = await require('bcryptjs').hash('password123', 10);
 
+    // 1.5 Create Super Admin
+    await User.create({
+      firstName: 'Portal',
+      lastName: 'Admin',
+      email: 'superadmin@qpt.com',
+      password: hashedPassword,
+      role: 'super_admin',
+    });
+
     // 2. Create Users for ABC
     const adminABC = await User.create({
       firstName: 'Admin',
