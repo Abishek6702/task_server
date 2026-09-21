@@ -19,12 +19,7 @@ const globalSearch = async (req, res) => {
 
     // Projects
     let projectQuery = { organizationId: orgId, $or: [{ name: regex }, { projectCode: regex }] };
-    if (role === 'employee') {
-       taskQuery.$or = [
-         { title: regex, assignedTo: userId },
-         { taskCode: regex, assignedTo: userId },
-       ];
-    } else if (role === 'viewer') {
+     if (role === 'employee' || role === 'viewer') {
        projectQuery.$or = [
          { name: regex, members: userId },
          { projectCode: regex, members: userId },
