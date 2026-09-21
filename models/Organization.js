@@ -13,6 +13,9 @@ const organizationSchema = new mongoose.Schema(
       unique: true,
       trim: true,
       uppercase: true,
+      minlength: 2,
+      maxlength: 20,
+      match: [/^[A-Z0-9_-]+$/, 'Organization code may contain only letters, numbers, underscores, and hyphens'],
     },
     logo: {
       type: String,
@@ -25,6 +28,8 @@ const organizationSchema = new mongoose.Schema(
         /^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/,
         'Please add a valid email',
       ],
+      lowercase: true,
+      trim: true,
     },
     phone: {
       type: String,
@@ -42,5 +47,7 @@ const organizationSchema = new mongoose.Schema(
     timestamps: true,
   }
 );
+
+organizationSchema.index({ status: 1 });
 
 module.exports = mongoose.model('Organization', organizationSchema);

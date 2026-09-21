@@ -18,6 +18,8 @@ const userSchema = new mongoose.Schema(
         /^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/,
         'Please add a valid email',
       ],
+      lowercase: true,
+      trim: true,
     },
     phone: String,
     password: {
@@ -46,6 +48,10 @@ const userSchema = new mongoose.Schema(
     profileImage: String,
     department: String,
     designation: String,
+    divisionCapabilities: [{
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'OrganizationDivision',
+    }],
     isActive: {
       type: Boolean,
       default: true,
@@ -61,6 +67,9 @@ const userSchema = new mongoose.Schema(
 
 // Compound index to ensure email is unique per organization
 userSchema.index({ email: 1, organizationId: 1 }, { unique: true });
+userSchema.index({ organizationId: 1, isActive: 1 });
+userSchema.index({ organizationId: 1, createdAt: -1 });
+userSchema.index({ organizationId: 1, divisionCapabilities: 1 });
 
 // Encrypt password using bcrypt
 userSchema.pre('save', async function () {

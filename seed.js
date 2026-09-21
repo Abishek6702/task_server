@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const { getMongoUri } = require('./config/env');
 const dotenv = require('dotenv');
 const Organization = require('./models/Organization');
 const User = require('./models/User');
@@ -11,7 +12,7 @@ dotenv.config();
 const connectDB = async () => {
   try {
     dns.setServers(['208.67.222.222', '208.67.220.220']);
-    await mongoose.connect(process.env.MONGO_URI);
+    await mongoose.connect(getMongoUri());
     console.log('MongoDB Connected...');
   } catch (error) {
     console.error(`Error: ${error.message}`);

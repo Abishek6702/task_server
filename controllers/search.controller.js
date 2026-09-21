@@ -1,22 +1,30 @@
 const Task = require('../models/Task');
 const Project = require('../models/Project');
 const User = require('../models/User');
+const { parsePagination } = require('../utils/validation');
 
 const globalSearch = async (req, res) => {
   try {
-    const { q } = req.query;
-    if (!q || q.trim() === '') {
-      return res.status(200).json({ success: true, data: [] });
+    const q = typeof req.query.q === 'string' ? req.query.q.trim() : '';
+    if (!q) {
+      return res.status(200).json({ success: true, data: [], pagination: {} });
     }
+    if (q.length > 100) return res.status(400).json({ success: false, message: 'Search query is too long' });
 
     const orgId = req.user.organizationId;
     const userId = req.user.id;
     const role = req.user.role;
-    const regex = new RegExp(q, 'i');
+    const regex = new RegExp(q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i');
+    const { page, limit, skip } = parsePagination(req.query, { defaultLimit: 5, maxLimit: 20 });
 
     // Projects
     let projectQuery = { organizationId: orgId, $or: [{ name: regex }, { projectCode: regex }] };
-    if (role === 'employee' || role === 'viewer') {
+    if (role === 'employee') {
+       taskQuery.$or = [
+         { title: regex, assignedTo: userId },
+         { taskCode: regex, assignedTo: userId },
+       ];
+    } else if (role === 'viewer') {
        projectQuery.$or = [
          { name: regex, members: userId },
          { projectCode: regex, members: userId },
@@ -24,7 +32,10 @@ const globalSearch = async (req, res) => {
          { projectCode: regex, managerId: userId }
        ];
     }
-    const projects = await Project.find(projectQuery).select('_id name projectCode status').limit(5);
+    const [projectTotal, projects] = await Promise.all([
+      Project.countDocuments(projectQuery),
+      Project.find(projectQuery).select('_id name projectCode status').skip(skip).limit(limit),
+    ]);
 
     // Tasks
     let taskQuery = { organizationId: orgId, $or: [{ title: regex }, { taskCode: regex }] };
@@ -38,15 +49,24 @@ const globalSearch = async (req, res) => {
          { taskCode: regex, projectId: { $in: projectIds } }
        ];
     }
-    const tasks = await Task.find(taskQuery).select('_id title taskCode status projectId').limit(5);
+    const [taskTotal, tasks] = await Promise.all([
+      Task.countDocuments(taskQuery),
+      Task.find(taskQuery).select('_id title taskCode status projectId').skip(skip).limit(limit),
+    ]);
 
     // Users
     let users = [];
     if (role === 'organization_admin' || role === 'super_admin' || role === 'project_manager') {
-       users = await User.find({ 
+       const userQuery = { 
          organizationId: orgId, 
          $or: [{ firstName: regex }, { lastName: regex }, { email: regex }] 
-       }).select('_id firstName lastName email role').limit(5);
+       };
+       const [userTotal, userResults] = await Promise.all([
+         User.countDocuments(userQuery),
+         User.find(userQuery).select('_id firstName lastName email role').skip(skip).limit(limit),
+       ]);
+       users = userResults;
+       req.searchUserTotal = userTotal;
     }
 
     const results = [
@@ -55,8 +75,14 @@ const globalSearch = async (req, res) => {
       ...users.map(u => ({ id: u._id, type: 'user', title: `${u.firstName} ${u.lastName}`, subtitle: u.email, status: u.role }))
     ];
 
-    res.status(200).json({ success: true, data: results });
+    res.status(200).json({ success: true, pagination: {
+      page, limit,
+      projects: { total: projectTotal, totalPages: Math.ceil(projectTotal / limit) },
+      tasks: { total: taskTotal, totalPages: Math.ceil(taskTotal / limit) },
+      users: { total: req.searchUserTotal || 0, totalPages: Math.ceil((req.searchUserTotal || 0) / limit) },
+    }, data: results });
   } catch (error) {
+    if (/Page|Limit/.test(error.message)) return res.status(400).json({ success: false, message: error.message });
     res.status(500).json({ success: false, message: error.message });
   }
 };

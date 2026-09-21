@@ -1,18 +1,20 @@
 const Notification = require('../models/Notification');
+const { parsePagination } = require('../utils/validation');
 
 // @desc    Get all notifications for user
 // @route   GET /api/notifications
 // @access  Private
 const getNotifications = async (req, res) => {
   try {
-    const page = parseInt(req.query.page, 10) || 1;
-    const limit = parseInt(req.query.limit, 10) || 20;
-    const skip = (page - 1) * limit;
+    let pagination;
+    try { pagination = parsePagination(req.query, { defaultLimit: 20 }); } catch (error) { return res.status(400).json({ success: false, message: error.message }); }
+    const { page, limit, skip } = pagination;
 
     const query = {
       organizationId: req.user.organizationId,
       userId: req.user.id,
     };
+    if (req.query.unread === 'true') query.isRead = false;
 
     const [notifications, total, unreadCount] = await Promise.all([
       Notification.find(query).sort('-createdAt').skip(skip).limit(limit),
@@ -24,7 +26,7 @@ const getNotifications = async (req, res) => {
       success: true,
       count: notifications.length,
       unreadCount,
-      pagination: { page, limit, total, pages: Math.ceil(total / limit) },
+      pagination: { page, limit, total, totalPages: Math.ceil(total / limit), pages: Math.ceil(total / limit) },
       data: notifications,
     });
   } catch (error) {
