@@ -21,6 +21,10 @@ const commentSchema = new mongoose.Schema(
       type: String,
       required: [true, 'Please add a message'],
     },
+    mentions: [{
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+    }],
     attachments: [
       {
         fileName: String,
@@ -28,6 +32,10 @@ const commentSchema = new mongoose.Schema(
         mimeType: String,
         size: Number,
         path: String,
+        uploadedBy: {
+          type: mongoose.Schema.Types.ObjectId,
+          ref: 'User',
+        },
         uploadedAt: {
           type: Date,
           default: Date.now,
@@ -42,5 +50,6 @@ const commentSchema = new mongoose.Schema(
 );
 
 commentSchema.index({ organizationId: 1, taskId: 1 });
+commentSchema.index({ organizationId: 1, taskId: 1, createdAt: 1 });
 
 module.exports = mongoose.model('Comment', commentSchema);

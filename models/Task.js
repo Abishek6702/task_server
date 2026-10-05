@@ -24,6 +24,11 @@ const taskSchema = new mongoose.Schema(
       ref: 'Project',
       required: true,
     },
+    divisionId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Division',
+      default: null,
+    },
     parentTaskId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Task',
@@ -103,5 +108,9 @@ taskSchema.index({ organizationId: 1, projectId: 1 });
 taskSchema.index({ organizationId: 1, assignedTo: 1 }); // works with arrays too
 taskSchema.index({ organizationId: 1, status: 1 });
 taskSchema.index({ organizationId: 1, dueDate: 1 });
+taskSchema.index({ organizationId: 1, parentTaskId: 1 });
+taskSchema.index({ organizationId: 1, projectId: 1, status: 1 });
+taskSchema.index({ organizationId: 1, projectId: 1, divisionId: 1 });
+taskSchema.index({ organizationId: 1, createdAt: -1 });
 
 module.exports = mongoose.model('Task', taskSchema);

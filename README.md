@@ -1,6 +1,6 @@
 # Multi-Company Task Management System
 
-A production-ready, full-stack multi-tenant task management system designed for independent companies to manage their projects and tasks within a single isolated software installation.
+A full-stack multi-tenant task management system designed for independent companies to manage projects and tasks within a single isolated software installation. Production deployment still requires SMTP, persistent file storage, backups, monitoring, and verified integration testing.
 
 ## Features
 
@@ -73,7 +73,11 @@ Copy the example environment file:
 ```bash
 cp .env.example .env
 ```
-Ensure your `MONGO_URI` is correctly pointing to your MongoDB instance.
+Set the canonical `MONGO_URI` to your MongoDB instance. `MONGODB_URI` remains supported as a backward-compatible fallback only when `MONGO_URI` is absent; new deployments should use `MONGO_URI`.
+
+Production also requires a strong `JWT_SECRET`, explicit `JWT_EXPIRES_IN`, and `CORS_ORIGIN`/`FRONTEND_URL`. Copy the safe examples in `.env.example`; never commit real secrets.
+
+Password reset email requires the configured `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASSWORD`, and `SMTP_FROM` variables. SMTP delivery has not been verified in this repository environment.
 
 ### 2. Database Seeding (Crucial for testing)
 
@@ -100,6 +104,7 @@ Copy the example environment file:
 ```bash
 cp .env.example .env
 ```
+Set `VITE_API_URL` to the backend API URL. The frontend contains no backend credentials.
 
 ### 4. Running the Application
 
@@ -114,6 +119,12 @@ npm run dev
 ```
 
 Visit `http://localhost:5173` to view the application.
+
+### Runtime notes
+
+- `GET /health` and `GET /api/health` are unauthenticated readiness endpoints. They return `503` until MongoDB is connected.
+- Attachments use private local disk storage under `backend/uploads`. Production must provide a persistent volume; cloud storage is not implemented.
+- MongoDB integration tests currently depend on the local test environment and must be run separately when MongoDB Memory Server is available.
 
 ## Multi-Tenant Security Note
 
