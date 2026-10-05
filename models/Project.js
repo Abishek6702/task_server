@@ -61,6 +61,10 @@ const projectSchema = new mongoose.Schema(
 
 // Indexes for tenant isolation and fast lookups
 projectSchema.index({ organizationId: 1 });
+projectSchema.index({ organizationId: 1, createdAt: -1 });
+projectSchema.index({ organizationId: 1, dueDate: 1 });
 projectSchema.index({ organizationId: 1, projectCode: 1 }, { unique: true });
+projectSchema.index({ organizationId: 1, members: 1 });
+projectSchema.index({ organizationId: 1, managerId: 1 });
 
 module.exports = mongoose.model('Project', projectSchema);

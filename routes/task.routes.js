@@ -8,6 +8,7 @@ const {
   duplicateTask,
 } = require('../controllers/task.controller');
 const { protect } = require('../middleware/authMiddleware');
+const { validateObjectIdParams } = require('../middleware/validate');
 
 const router = express.Router();
 
@@ -20,10 +21,11 @@ router
 
 router
   .route('/:id')
+  .all(validateObjectIdParams('id'))
   .get(getTask)
   .put(updateTask)
   .delete(deleteTask);
 
-router.route('/:id/duplicate').post(duplicateTask);
+router.route('/:id/duplicate').all(validateObjectIdParams('id')).post(duplicateTask);
 
 module.exports = router;
