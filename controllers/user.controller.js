@@ -2,6 +2,8 @@ const User = require('../models/User');
 const OrganizationDivision = require('../models/OrganizationDivision');
 const { parsePagination } = require('../utils/validation');
 const { normalizeEmail, cleanString, isValidEmail } = require('../utils/validation');
+const { sendWelcomeEmail } = require('../utils/emailService');
+
 const escapeRegex = (value) => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
 // @desc    Get users for an organization
@@ -107,7 +109,24 @@ const createUser = async (req, res) => {
     const user = await User.create(data);
     user.password = undefined;
 
+    // Send welcome email (fire-and-forget — don't block response on email failure)
+    const plainPassword = req.body.password; // capture before it's cleared
+    try {
+      const Organization = require('../models/Organization');
+      const org = await Organization.findById(req.user.organizationId).select('name');
+      sendWelcomeEmail({
+        to: data.email,
+        name: `${data.firstName} ${data.lastName}`,
+        email: data.email,
+        password: plainPassword,
+        organizationName: org?.name || 'the organization',
+      }).catch(err => console.error('[Welcome Email] Failed to send:', err.message));
+    } catch (emailErr) {
+      console.error('[Welcome Email] Setup error:', emailErr.message);
+    }
+
     res.status(201).json({ success: true, data: user });
+
   } catch (error) {
     if (error.code === 11000) {
       return res.status(400).json({ success: false, message: 'Email already exists in this organization' });
